@@ -7,10 +7,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: huggingface/hub-sync@v1
         with:
-          fetch-depth: 0
-          lfs: true
-      - name: Push to hub
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push --force https://Merongetachew:$HF_TOKEN@huggingface.co/spaces/Merongetachew/MGspeed main
+          github_repo_id: Merongetachew/MGspeed
+          huggingface_repo_id: Merongetachew/MGspeed
+          repo_type: space
+          space_sdk: docker
+          hf_token: ${{ secrets.HF_TOKEN }}
