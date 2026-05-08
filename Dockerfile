@@ -14,4 +14,4 @@ COPY . .
 
 # 5. The Start Command
 # If your folder name is different than 'storefront', change it below
-CMD ["gunicorn", "--chdir", ".", "storefront.wsgi:application", "--bind", "0.0.0.0:10000"]
+CMD ["gunicorn", "storefront.wsgi:application", "--bind", "0.0.0.0:10000", "--log-level", "debug"]
