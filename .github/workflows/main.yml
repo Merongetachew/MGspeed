@@ -6,11 +6,15 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: huggingface/hub-sync@v0.1.0
+      - name: Checkout Code
+        uses: actions/checkout@v4
         with:
-          github_repo_id: Merongetachew/MGspeed
-          huggingface_repo_id: Merongetachew/MGspeed
-          repo_type: space
-          space_sdk: docker
-          hf_token: ${{ secrets.HF_TOKEN }}
+          fetch-depth: 0
+          lfs: true
+
+      - name: Push to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git remote add hf https://Merongetachew:$HF_TOKEN@huggingface.co/spaces/Merongetachew/MGspeed
+          git push --force hf main
