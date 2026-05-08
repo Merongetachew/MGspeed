@@ -15,7 +15,6 @@ PIXEL_TO_METER = CALIBRATION_DISTANCE / CALIBRATION_PIXELS
 FRAME_RATE = 30
 
 # Initialize Model and Tracker
-# Added the correct path based on your folder structure
 model_path = os.path.join('ai_models', 'yolov8n.pt')
 model = YOLO(model_path)
 tracker = Sort(max_age=30)
@@ -26,53 +25,51 @@ def monitor_page(request):
     if request.method == 'POST' and request.FILES.get('video'):
         video_file = request.FILES['video']
         fs = FileSystemStorage()
-        # Save the file to the 'media' folder
         filename = fs.save(video_file.name, video_file)
         video_path = fs.path(filename)
         
-        # Store the path in a session so the stream knows which file to open
         request.session['current_video_path'] = video_path
         context['video_uploaded'] = True
         context['video_name'] = video_file.name
 
-    # FIXED: Added 'vehiclespeed/' prefix to match your folder structure
     return render(request, 'vehiclespeed/monitor.html', context)
 
 # --- 2. The Stream View ---
 def live_monitor(request):
     video_path = request.session.get('current_video_path')
     if not video_path or not os.path.exists(video_path):
-        video_path = 0 # Fallback to webcam
+        video_path = 0 
     return StreamingHttpResponse(stream_frames(video_path), 
                                  content_type='multipart/x-mixed-replace; boundary=frame')
 
-# --- 3. The Processing Logic with Speed Logging ---
+# --- 3. The Optimized Processing Logic ---
 def stream_frames(video_path):
     cap = cv2.VideoCapture(video_path)
     prev_positions = {}
-    speed_log = {}  # Dictionary to store the maximum speed for each vehicle ID
+    speed_log = {} 
     
     while True:
         success, frame = cap.read()
         if not success:
-            # Final report to terminal
-            print("\n--- FINAL SPEED REPORT ---")
-            for vid, max_spd in speed_log.items():
-                print(f"Vehicle ID {vid}: Max Speed {max_spd} km/h")
-            print("---------------------------\n")
             break
 
+        # --- OPTIMIZATION 1: Resize the frame to save RAM ---
+        # Reducing resolution is the best way to prevent SIGKILL crashes.
+        frame = cv2.resize(frame, (640, 360))
+
         detections = np.empty((0, 5))
-        # Use stream=True for memory efficiency on Render
-        results = model(frame, stream=True)
+        
+        # --- OPTIMIZATION 2: Run YOLO on smaller internal image ---
+        # imgsz=320 makes the detection much faster on a free-tier CPU.
+        results = model(frame, stream=True, imgsz=320, conf=0.4)
 
         for info in results:
             for box in info.boxes:
                 x1, y1, x2, y2 = box.xyxy[0]
                 conf = box.conf[0]
                 cls = int(box.cls[0])
-                # Persons (0), Cars (2), Motorcycles (3), Buses (5), Trucks (7)
-                if cls in [0, 2, 3, 5, 7] and conf > 0.4: 
+                # Detecting Cars, Motorcycles, Buses, and Trucks
+                if cls in [2, 3, 5, 7] and conf > 0.4: 
                     new_det = np.array([int(x1), int(y1), int(x2), int(y2), conf])
                     detections = np.vstack((detections, new_det))
 
@@ -99,14 +96,18 @@ def stream_frames(video_path):
             # Drawing logic
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.putText(frame, f'ID:{obj_id} {speed:.1f}km/h', (x1, y1-10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             
             if obj_id in speed_log:
                 cv2.putText(frame, f'MAX:{speed_log[obj_id]}', (x1, y2+20),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
-        _, buffer = cv2.imencode('.jpg', frame)
+        # --- OPTIMIZATION 3: JPEG Quality Reduction ---
+        # Lower quality (60) makes the stream smoother on low bandwidth.
+        _, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 60])
+        
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
     
     cap.release()
+    cv2.destroyAllWindows()
