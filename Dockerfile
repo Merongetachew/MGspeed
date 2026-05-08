@@ -1,18 +1,17 @@
-# 1. Use Python
-FROM python:3.10-slim
+# 1. Use the FULL Python image (not slim) to avoid download errors
+FROM python:3.10
 
-# 2. The Fix: We add '--fix-missing' and an extra update step
-RUN apt-get update --fix-missing && apt-get install -y \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# 3. Setup the rest as before
+# 2. Set the working directory
 WORKDIR /app
+
+# 3. Install requirements 
+# (Make sure 'opencv-python-headless' is in your requirements.txt!)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# 4. Copy your project
 COPY . .
 
-# 4. Start command
+# 5. The Start Command
+# If your folder name is different than 'storefront', change it below
 CMD ["gunicorn", "storefront.wsgi:application", "--bind", "0.0.0.0:10000"]
