@@ -8,3 +8,5 @@ pandas
 ultralytics
 python-dotenv
 scikit-image
+filterpy
+lap
