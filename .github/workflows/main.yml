@@ -1,13 +1,12 @@
 name: Sync to Hugging Face Hub
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           lfs: true
