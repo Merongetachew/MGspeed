@@ -1,14 +1,9 @@
 
-# Web Framework & Server
 django
 gunicorn
 whitenoise
-
-# Data & Video Processing (The Speed Track Logic)
 opencv-python-headless
 numpy
 pandas
 ultralytics
-
-# Deployment Helpers
 python-dotenv
