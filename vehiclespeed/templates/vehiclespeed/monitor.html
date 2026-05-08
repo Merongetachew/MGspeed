@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vehicle Speed Monitor</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #f0f2f5; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 40px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1 { color: #1a73e8; margin-bottom: 30px; }
+        
+        /* Upload Section */
+        .upload-section { border: 2px dashed #ccc; padding: 20px; border-radius: 8px; margin-bottom: 30px; background: #fafafa; }
+        input[type="file"] { margin-bottom: 15px; }
+        
+        /* Video Display */
+        #video-feed { width: 100%; max-width: 720px; border: 4px solid #333; border-radius: 8px; background: #000; margin-top: 20px; }
+        
+        /* Buttons */
+        button { padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 6px; border: none; transition: opacity 0.2s; }
+        .upload-btn { background: #1a73e8; color: white; }
+        .stop-btn { background: #dc3545; color: white; margin-top: 15px; }
+        button:hover { opacity: 0.9; }
+
+        .status-msg { color: #666; font-style: italic; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Vehicle Speed Detector</h1>
+        
+        <!-- 1. Upload Form -->
+        <div class="upload-section">
+            <h3>Step 1: Upload a Traffic Video</h3>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="file" name="video" accept="video/*" required>
+                <br>
+                <button type="submit" class="upload-btn">Upload & Analyze</button>
+            </form>
+            <p class="status-msg">Record a video of cars and upload it here.</p>
+        </div>
+
+        <hr>
+
+        <!-- 2. Results Section (Only shows after upload) -->
+        {% if video_uploaded %}
+        <div id="results-section">
+            <h3>Step 2: Processing Results</h3>
+            <p>Analyzing: <strong>{{ video_name }}</strong></p>
+            
+            <!-- The streaming image calling your live_monitor view -->
+            <img id="video-feed" src="{% url 'live_monitor' %}">
+            
+            <br>
+            <button class="stop-btn" onclick="stopProcessing()">Stop / Reset</button>
+        </div>
+        {% else %}
+        <div style="padding: 40px; color: #999; border: 2px solid #eee; border-radius: 8px;">
+            Video display will appear here after upload.
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function stopProcessing() {
+            // This simply stops the image from loading and refreshes the page to clear the session
+            document.getElementById('video-feed').src = "";
+            window.location.href = "{% url 'monitor_page' %}"; 
+        }
+    </script>
+</body>
+</html>
