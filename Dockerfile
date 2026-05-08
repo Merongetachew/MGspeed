@@ -21,6 +21,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 6. Copy your project
 COPY . .
 
-# 7. Collect static files and Start Command
+# 7. Optimized Start Command for AI processing
+# --timeout 120 gives the model time to process frames without timing out
+# --workers 1 ensures we stay within the 512MB RAM limit
 CMD python manage.py collectstatic --noinput && \
-    gunicorn storefront.wsgi:application --bind 0.0.0.0:10000
+    gunicorn storefront.wsgi:application \
+    --bind 0.0.0.0:10000 \
+    --timeout 120 \
+    --workers 1 \
+    --threads 2
